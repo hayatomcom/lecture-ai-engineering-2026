@@ -11,6 +11,8 @@
 """
 
 import argparse
+import time
+from dataclasses import dataclass
 
 from google import genai
 from google.genai import errors
@@ -21,18 +23,50 @@ from app.config import MODEL, api_error_message, get_api_key
 DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何ですか？"
 
 
-def ask(question: str) -> str:
-    client = genai.Client(api_key=get_api_key())
-    response = client.models.generate_content(model=MODEL, contents=question)
+@dataclass(frozen=True)
+class Measurement:
+    """LLM の応答と、API 呼び出しにかかった時間・トークン数。"""
 
+    text: str
+    elapsed_seconds: float
+    input_tokens: int | None
+    output_tokens: int | None
+
+
+def measure(question: str, model: str = MODEL) -> Measurement:
+    """質問を送り、API 呼び出しの応答時間とトークン数を返す。"""
+    client = genai.Client(api_key=get_api_key())
+    start = time.perf_counter()
+    response = client.models.generate_content(model=model, contents=question)
+    elapsed_seconds = time.perf_counter() - start
+
+    input_tokens = output_tokens = None
     if response.usage_metadata is not None:
         usage = response.usage_metadata
-        print(
-            f"[トークン数] 入力: {usage.prompt_token_count}, "
-            f"出力: {usage.candidates_token_count}"
-        )
+        input_tokens = usage.prompt_token_count
+        output_tokens = usage.candidates_token_count
 
-    return response.text
+    return Measurement(
+        text=response.text,
+        elapsed_seconds=elapsed_seconds,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+    )
+
+
+def print_measurement(measurement: Measurement) -> None:
+    """計測結果を日本語で表示する。"""
+    print(f"[応答時間] {measurement.elapsed_seconds:.3f} 秒")
+    print(
+        f"[トークン数] 入力: {measurement.input_tokens}, "
+        f"出力: {measurement.output_tokens}"
+    )
+
+
+def ask(question: str) -> str:
+    measurement = measure(question)
+    print_measurement(measurement)
+    return measurement.text
 
 
 def main() -> None:
