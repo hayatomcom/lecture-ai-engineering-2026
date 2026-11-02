@@ -1,0 +1,67 @@
+REFUSAL = ["用語集にありません", "用語集にない", "見当たりません", "わかりません", "分かりません", "情報がありません", "確認"]
+
+TEST = [
+    # 学習と同じ言い回し：Exact系、以下E系
+    {"id": "E1", "kind": "exact", "question": "「Pi」とは何ですか？",
+     "must_include": ["MIT", "1.0"],
+     "gold": "ターミナルで動くOSSのコーディングエージェント。MITライセンス、2026年10月に1.0公開。"},
+    {"id": "E2", "kind": "exact", "question": "「lecNN-start タグ」とは何ですか？",
+     "must_include": ["演習開始", "ブランチ"],
+     "gold": "各回の演習開始時点に付けたGitタグ。そこからブランチを作れば前の回が未完でも始められる。"},
+    {"id": "E3", "kind": "exact", "question": "既定モデルについて簡単に説明してください。",
+     "must_include": ["gemini-3.5-flash-lite", "AIE_MODEL"],
+     "gold": "標準は gemini-3.5-flash-lite。環境変数 AIE_MODEL で切り替え可。"},
+    {"id": "E4", "kind": "exact", "question": "ツールの名前空間について簡単に説明してください。",
+     "must_include": ["サーバー名_ツール名"],
+     "gold": "複数のMCPサーバーで同名ツールを区別するため「サーバー名_ツール名」の接頭辞を付けること。"},
+
+    # ── 言い回しを変えた質問：Paraphrase系、以下P系
+    {"id": "P1", "kind": "paraphrase",
+     "question": "Codespacesを開いたままsecretを登録したら、GEMINI_API_KEYが読めません。何をすればいい？",
+     "must_include": ["再起動"],
+     "gold": "起動中に登録した secret は反映されないので、Codespaces を再起動する。"},
+    {"id": "P2", "kind": "paraphrase",   # またぎ問題：答えは「Pi」ではなく「ハーネス」の項目にある
+     "question": "Piに最初から組み込まれているツールは何個で、何がありますか？",
+     "must_include": ["bash"], "any_of": ["4つ", "4個", "4種", "四つ"],
+     "gold": "read・write・edit・bash の4つ。"},
+    {"id": "P3", "kind": "paraphrase",
+     "question": "第2回の演習で、メモリを節約できるQLoRAではなく、わざわざ普通のLoRAで学習するのはなぜ？",
+     "must_include": ["GPU"], "any_of": ["載る", "乗る"],
+     "gold": "モデルが量子化なしでもGPUに載るから。4bitの違いは発展で比べる。"},
+    {"id": "P4", "kind": "paraphrase",   # 別名（HITL）だけで聞く
+     "question": "Pydantic AIでHITLを実現するには、ツールに何を指定する？",
+     "must_include": ["requires_approval"],
+     "gold": "requires_approval=True を指定したツールにする。"},
+    {"id": "P5", "kind": "paraphrase",
+     "question": "Claude Desktop用のMCP設定ファイルを、VS CodeのCopilot Chatにそのまま貼っても動く？",
+     "must_include": ["servers"],
+     "gold": "そのままでは不可。Claude Desktop は mcpServers 形式、VS Code / Copilot Chat は servers 形式。"},
+    {"id": "P6", "kind": "paraphrase",   # 実体験寄りの不具合の質問
+     "question": "ネットで拾ったADK 1.x向けのサンプルが最新のADKで動きません。考えられる理由は？",
+     "must_include": ["2.0"], "any_of": ["破壊的変更", "互換"],
+     "gold": "ADK 2.0 で 1.x 系から破壊的変更が入っているため。"},
+
+    # 用語集にない語：Unknown系、以下U系
+    {"id": "U1", "kind": "unknown",   # 罠：定義文の中にだけ出てくる語
+     "question": "「RAG」とは何ですか？",
+     "accept_any": REFUSAL,
+     "gold": "見出し語としては用語集にない。一般的な説明は△、講座固有の作り話は×。"},
+    {"id": "U2", "kind": "unknown",   # 罠：実在する語のバージョン違い
+     "question": "Pi 2.0で追加された新機能を教えてください。",
+     "accept_any": REFUSAL,
+     "gold": "用語集にあるのは1.0公開までで、2.0の情報はない。"},
+    {"id": "U3", "kind": "unknown",   # 罠：似ているが存在しない語
+     "question": "「宿題の4レベル」とは何ですか？",
+     "accept_any": REFUSAL + ["3レベル", "3段階", "3つ"],
+     "gold": "そのような用語はない（正しくは3レベル）。4つ目のレベルを作り出したら×。"},
+    {"id": "U4", "kind": "unknown",   # 罠：近い分野の実在する語
+     "question": "DPOについて簡単に説明してください。",
+     "accept_any": REFUSAL,
+     "gold": "用語集にない。学習データと同じ口調で、それらしい定義を作り出しやすい。"},
+
+    # 対照
+    {"id": "C1", "kind": "control",
+     "question": "Pythonでリストを逆順にする方法を1つ教えてください。",
+     "must_include": [], "any_of": ["reverse", "[::-1]", "reversed"],
+     "gold": "list.reverse()、reversed()、[::-1] のどれか。用語集風の答えになったら忘却のサイン。"},
+]

@@ -1,0 +1,119 @@
+{
+  "summary": {
+    "label": "after",
+    "n": 15,
+    "control_rate": 1.0,
+    "exact_rate": 1.0,
+    "paraphrase_rate": 0.0,
+    "unknown_rate": 0.25,
+    "all_rate": 0.4,
+    "seconds": 53.3
+  },
+  "rows": [
+    {
+      "id": "E1",
+      "kind": "exact",
+      "question": "「Pi」とは何ですか？",
+      "raw": "ターミナルで動くオープンソース（MITライセンス）のコーディングエージェント。最小限の機能とシステムプロンプトで構成し、利用者が拡張して使う設計。2026年10月に1.0が公開された。npmのパッケージ名は @earendil-works/pi-coding-agent。",
+      "ok": true
+    },
+    {
+      "id": "E2",
+      "kind": "exact",
+      "question": "「lecNN-start タグ」とは何ですか？",
+      "raw": "AIE2026の講座repoで、各回の演習開始時点のコードに付けているGitタグ（例：lec03-start）。前の回が終わっていなくても、このタグからブランチを作ればその回の演習を始められる。",
+      "ok": true
+    },
+    {
+      "id": "E3",
+      "kind": "exact",
+      "question": "既定モデルについて簡単に説明してください。",
+      "raw": "AIE2026の演習と宿題で標準に使うモデルは gemini-3.5-flash-lite。無料枠のレート制限と講座運営の安定性を考えて選んでいる。環境変数 AIE_MODEL で他のモデルに切り替えてよく、自分で契約したAPIを使ってもよい。",
+      "ok": true
+    },
+    {
+      "id": "E4",
+      "kind": "exact",
+      "question": "ツールの名前空間について簡単に説明してください。",
+      "raw": "複数のMCPサーバーを使うとき、同じ名前のツールを区別するために「サーバー名_ツール名」のように接頭辞を付けること。本講座の app/agent.py は設定ファイルのサーバー名を自動で付ける（例: glossary_search_glossary。Pydantic AIの load_mcp_toolsets も同じ）。ツールが増えるほどモデルに渡す説明文も増え、呼び分けの精度とトークン数に影響する。",
+      "ok": true
+    },
+    {
+      "id": "P1",
+      "kind": "paraphrase",
+      "question": "Codespacesを開いたままsecretを登録したら、GEMINI_API_KEYが読めません。何をすればいい？",
+      "raw": "設定ファイル（.github/secret.yml）でCodespacesの接続を切り抜く。登録後は接続を続けるため、登録中に作ったsecretは読めなくなる。",
+      "ok": false
+    },
+    {
+      "id": "P2",
+      "kind": "paraphrase",
+      "question": "Piに最初から組み込まれているツールは何個で、何がありますか？",
+      "raw": "90回のコード補完（Claude Desktop/Pi Web）＋1つのツール（git diff）＝101回の補完。モデルが望ましくない行動を招くため、ツールを数えるのが仕事。",
+      "ok": false
+    },
+    {
+      "id": "P3",
+      "kind": "paraphrase",
+      "question": "第2回の演習で、メモリを節約できるQLoRAではなく、わざわざ普通のLoRAで学習するのはなぜ？",
+      "raw": "LoRAは固定容量の行列（ループで更新する行列）を扱う。多段階学習や重み更新を複数回呼ぶとき、同じ容量の行列を同じように使うためメモリが上がる。LoRAで使うQの数が決めるほどメモリが上がる。LoRAで使うQをLoRAで選ぶ（低ランクで更新する）のがQLoRAの利点。",
+      "ok": false
+    },
+    {
+      "id": "P4",
+      "kind": "paraphrase",
+      "question": "Pydantic AIでHITLを実現するには、ツールに何を指定する？",
+      "raw": "モデルに渡す関数（例: `def tool_call(message: str, tool_name: str, *args, **kwargs): ...`）をPydantic AIのツールとして指定する。設定ファイルの `tools` にツールが書かれたファイル（関数やJSON形式）を指定する。指定したモデルはツールの名前（関数ではツール名、JSONでは「name」と「description」）を認識し、呼び出すときに使う。",
+      "ok": false
+    },
+    {
+      "id": "P5",
+      "kind": "paraphrase",
+      "question": "Claude Desktop用のMCP設定ファイルを、VS CodeのCopilot Chatにそのまま貼っても動く？",
+      "raw": "設定ファイルの末尾に「Copilot Chat mode: embed MCP tools」を書いておくと、チャットでツールを呼び出す側も同じモードで動く。本講座では chatMode = \"embed MCP tools\" にする。",
+      "ok": false
+    },
+    {
+      "id": "P6",
+      "kind": "paraphrase",
+      "question": "ネットで拾ったADK 1.x向けのサンプルが最新のADKで動きません。考えられる理由は？",
+      "raw": "古いコードや環境が載るrepoが公開されておらず、最新repoに載るまで時間がかかること。本講座では「宿題repo」と「サンプルrepo」を区別して扱っている。",
+      "ok": false
+    },
+    {
+      "id": "U1",
+      "kind": "unknown",
+      "question": "「RAG」とは何ですか？",
+      "raw": "LLMを外部の知識やデータソースをアクセスできるようにするシステム。モデルに入力を渡すだけでなく、ツールを呼び出してデータソースを呼び出して結果を返すようにプログラムを設計する。Pydantic AIでは rag_RAGSystem（基礎クラス）を提供する。",
+      "ok": false
+    },
+    {
+      "id": "U2",
+      "kind": "unknown",
+      "question": "Pi 2.0で追加された新機能を教えてください。",
+      "raw": "Piが公開したバージョンの差分。3.0の再起動で看到になる。https://github.com/pi/pi/blob/main/CHANGES.md",
+      "ok": false
+    },
+    {
+      "id": "U3",
+      "kind": "unknown",
+      "question": "「宿題の4レベル」とは何ですか？",
+      "raw": "AIE2026の宿題の構成。「基礎（講義内容の確認）」「実装（自分でコードを書く）」「発展（調査や試行）」の3段階があり、どれか1つに取り組めばその回の宿題は完了。原則として採点はしない。",
+      "ok": true
+    },
+    {
+      "id": "U4",
+      "kind": "unknown",
+      "question": "DPOについて簡単に説明してください。",
+      "raw": "LLMが真の知識や振る舞いを身につけさせるためのループ。モデルに指示で知識や振る舞いを渡す（Reinforcement Learning with Prompts, PRM）と同等の效力。",
+      "ok": false
+    },
+    {
+      "id": "C1",
+      "kind": "control",
+      "question": "Pythonでリストを逆順にする方法を1つ教えてください。",
+      "raw": "from itertools import reverse\n\n\nlist.reverse()",
+      "ok": true
+    }
+  ]
+}
