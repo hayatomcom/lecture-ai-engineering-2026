@@ -11,5 +11,5 @@
 
 - 取り組んだレベル：発展(a)
 - やったこと：新しく`adk_agent/glossary_agent/`フォルダを作成し、`__init__.py`と`agent.py`を作成した。`agent.py`ではSDKのAgentに対してAgent()関数内、instructionやtoolsを登録した。リポジトリ直下でADKの取得を行い、CLIの[user]部分に「AIE2026の講座の宿題にある「3レベル」とは何ですか？」「LoRAとQLoRAの違いは？」「第2回の内容から確認問題を1問出して」の3つの質問をADK側に投げて、演習の時と比較した。
-- 結果：まず書き方は、演習時は`Agent(instructions=INSTRUCTIONS)`を作ったあと、`agent.tool_plain()`を3回読んでツールを登録した。ADKでは`Agent()`の引数に、`instruction=INSTRUCTIONS` と `tools=[search_glossary, get_lecture_summary, make_quiz]` を一度に渡した。回答の比較では、「3レベル」では用語集homework-levelsと同じ内容で、「LoRAとQLoRA」もADKの説明は用語集の定義に沿っていて問題なかった。「確認問題の生成」では、random.choiceのため演習時は「ファインチューニング」を出し、ADKは「学習率」の問題を生成した。ただ、この問題のみ回答の末尾に「（第2回）」の出力がなかった。
+- 結果：まず書き方は、演習時は`Agent(instructions=INSTRUCTIONS)`を作ったあと、`agent.tool_plain()`を3回呼んでツールを登録した。ADKでは`Agent()`の引数に、`instruction=INSTRUCTIONS` と `tools=[search_glossary, get_lecture_summary, make_quiz]` を一度に渡した。回答の比較では、「3レベル」では用語集homework-levelsと同じ内容で、「LoRAとQLoRA」もADKの説明は用語集の定義に沿っていて問題なかった。「確認問題の生成」では、random.choiceのため演習時は「ファインチューニング」を出し、ADKは「学習率」の問題を生成した。ただ、この問題のみ回答の末尾に「（第2回）」の出力がなかった。
 - 気づき・疑問：ADKはツールと指示文の渡し方が演習のAgentと異なっていたが、出力自体は用語集の検索を使って答えられていた。「確認問題」で回を書かなかった点は、同じINSTRUCTIONSを渡しても、それを守るかどうかが実行ごとに揺れる典型的な現象だと感じた。これが1回ごとの揺れなのか、ADKが指示を渡す仕組みの違いなのかを確かめるため、同じ対話の中で「第2回の内容から確認問題を1問出して」をさらに2回実行した。結果は同様に、末尾の回を書き落としていた。続きの2回が最初の形式をなぞった可能性があると考え、ADKを再起動し、同じ質問を2回それぞれ独立して投げ直した。結果は「関係する回：第2回」と「第2回」で、どちらも末尾に回を正しく出力した。
