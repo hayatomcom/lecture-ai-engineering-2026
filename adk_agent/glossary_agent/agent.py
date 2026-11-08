@@ -9,6 +9,6 @@ root_agent = Agent(
     tools=[
         tools.search_glossary,
         tools.get_lecture_summary,
-        tools.make_quiz,    # PydanticAI版では、agent.tool_plain(tools.)だったもの。
+        tools.make_quiz,    # PydanticAI版では、agent.tool_plain(tools.)だったものをまとめて渡している。
     ],
 )
