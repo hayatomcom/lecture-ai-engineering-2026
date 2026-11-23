@@ -22,6 +22,9 @@ RAG_TOP_K = 5
 GRAPH_START_K = 3
 GRAPH_HOPS = 2
 GRAPH_MAX_RESULTS = 10
+# 用語入口Graph: これより多くのページに出る用語は絞り込みにならないため入口にしない。
+TERM_HUB_MAX_PAGES = 20
+TERM_PAGES_PER_LECTURE = 2
 EMBEDDING_MODEL = "gemini-embedding-001"
 EMBEDDING_DIMENSIONS = 768
 # 2,048トークンの上限に対し、タスク指定等の分を残す。超過時は切り捨てず停止する。

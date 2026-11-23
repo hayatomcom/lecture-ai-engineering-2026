@@ -146,3 +146,20 @@ def search_graph(query: str) -> str:
         return json.dumps({"error": str(e)}, ensure_ascii=False)
     except APIError as e:
         return json.dumps({"error": api_error_message(e.code)}, ensure_ascii=False)
+
+# 第5回宿題：用語ノードを入口に回答する
+def search_term_graph(query: str) -> str:
+    """資料を検索し、質問に出る用語が載っているページを講義ごとに集めて、本文と引用情報を返す。
+
+    queryには、質問に出てくる用語と「第N回」の指定をそのまま含める。
+    """
+    import sqlite3
+    from google.genai.errors import APIError
+    from app.retrieval import search_term_graph as search
+
+    try:
+        return json.dumps(search(query), ensure_ascii=False)
+    except (ValueError, OSError, sqlite3.Error) as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
+    except APIError as e:
+        return json.dumps({"error": api_error_message(e.code)}, ensure_ascii=False)

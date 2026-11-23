@@ -18,6 +18,7 @@ from app.config import (
     EMBEDDING_DIMENSIONS, EMBEDDING_MAX_TOKENS, EMBEDDING_MODEL,
     RAG_DB, RAG_DOCUMENT_IDS, RAG_SOURCE, RAG_TOP_K, RAG_TREE, get_api_key,
     RAG_GRAPH, GRAPH_START_K, GRAPH_HOPS, GRAPH_MAX_RESULTS,
+    TERM_HUB_MAX_PAGES, TERM_PAGES_PER_LECTURE,
 )
 
 
@@ -183,6 +184,95 @@ def search_graph(query: str) -> dict:
     expanded = [candidate for _, candidate in sorted(candidates.values())]
     return {"seeds": results, "expanded": expanded[:max(0, GRAPH_MAX_RESULTS - len(results))],
             "max_hops": GRAPH_HOPS}
+
+
+def mentioned_lectures(query: str) -> set[int]:
+    """「第1回と第3回」「第1〜3回」のような回の指定を取り出す。"""
+    lectures = set()
+    for start, end in re.findall(r"第(\d+)\s*[〜~～\-－]\s*(\d+)回", query):
+        lectures.update(range(int(start), int(end) + 1))
+    lectures.update(int(n) for n in re.findall(r"第(\d+)回", query))
+    return lectures
+
+
+def match_terms(query: str, terms: list[dict]) -> list[dict]:
+    """用語の名前・別名が質問に含まれる用語を返す。英字の別名は単語単位で照合する。"""
+    text = query.casefold()
+    matched = []
+    for term in terms:
+        for name in {term["title"], *term.get("aliases", [])}:
+            name = name.casefold()
+            if name.isascii():
+                found = re.search(rf"(?<![a-z0-9]){re.escape(name)}(?![a-z0-9])", text)
+            else:
+                found = len(name) >= 2 and name in text
+            if found:
+                matched.append(term)
+                break
+    return matched
+
+
+def search_term_graph(query: str) -> dict:
+    """質問に出る用語ノードを入口に加え、その用語が出るページを講義ごとに選ぶ。"""
+    if not isinstance(query, str) or not query.strip():
+        raise ValueError("検索語が空です。")
+    pages = {page["page_id"]: page for page in load_pages(RAG_SOURCE)}
+    graph = json.loads(RAG_GRAPH.read_text(encoding="utf-8"))
+    terms = [node for node in graph["nodes"] if node["kind"] == "term"]
+    mentions, next_pages = defaultdict(set), defaultdict(set)
+    for edge in graph["edges"]:
+        for a, b in ((edge["source"], edge["target"]), (edge["target"], edge["source"])):
+            if edge["relation"] == "mentions" and a.startswith("term:") and b in pages:
+                mentions[a].add(b)
+            elif edge["relation"] == "next_page" and a in pages and b in pages:
+                next_pages[a].add(b)
+
+    lectures = mentioned_lectures(query)
+    in_scope = lambda page_id: not lectures or pages[page_id]["lecture"] in lectures
+    matched = match_terms(query, terms)
+    entry_terms = [t for t in matched if 0 < len(mentions[t["id"]]) <= TERM_HUB_MAX_PAGES]
+    skipped_terms = [t["title"] for t in matched if len(mentions[t["id"]]) > TERM_HUB_MAX_PAGES]
+
+    with open_index(RAG_DB) as db:
+        vector = sqlite_vec.serialize_float32(embed_text(query.strip(), "RETRIEVAL_QUERY"))
+        candidate_ids = sorted({p for t in entry_terms for p in mentions[t["id"]]})
+        distances = {row["page_id"]: row["distance"] for row in db.execute(
+            f"SELECT page_id, vec_distance_cosine(embedding, ?) AS distance FROM chunks "
+            f"WHERE page_id IN ({','.join('?' * len(candidate_ids))})", (vector, *candidate_ids))
+        } if candidate_ids else {}
+        ranked = [dict(row) for row in db.execute("""
+            SELECT page_id, vec_distance_cosine(embedding, ?) AS distance
+            FROM chunks ORDER BY distance, page_id LIMIT ?
+        """, (vector, RAG_TOP_K))]
+    seed_hits = [hit for hit in ranked if hit["page_id"] in pages and in_scope(hit["page_id"])] \
+        or [hit for hit in ranked if hit["page_id"] in pages]
+
+    results, chosen = [], set()
+
+    def add(page_id, **info):
+        if page_id in chosen or len(results) >= GRAPH_MAX_RESULTS:
+            return
+        chosen.add(page_id)
+        results.append({**pages[page_id], **info})
+
+    for hit in seed_hits[:GRAPH_START_K]:
+        add(hit["page_id"], distance=hit["distance"], via="vector")
+    # 用語ごと・講義ごとに距離の近いページを選び、1つの講義に偏らないようにする。
+    for term in entry_terms:
+        by_lecture = defaultdict(list)
+        for page_id in mentions[term["id"]]:
+            if in_scope(page_id) and page_id in distances and page_id not in chosen:
+                by_lecture[pages[page_id]["lecture"]].append(page_id)
+        for lecture in sorted(by_lecture):
+            for page_id in sorted(by_lecture[lecture], key=lambda p: (distances[p], p))[:TERM_PAGES_PER_LECTURE]:
+                add(page_id, distance=distances[page_id], via=f"term:{term['title']}")
+    if not entry_terms:
+        for hit in seed_hits[:GRAPH_START_K]:
+            for page_id in sorted(next_pages[hit["page_id"]]):
+                add(page_id, via=f"next_page:{hit['page_id']}")
+
+    return {"matched_terms": [t["title"] for t in entry_terms], "skipped_hub_terms": skipped_terms,
+            "lectures": sorted(lectures), "results": results}
 
 
 
